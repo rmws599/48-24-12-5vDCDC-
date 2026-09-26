@@ -45,10 +45,14 @@
 <img width="634" height="382" alt="pcb" src="https://github.com/user-attachments/assets/574a5a2a-36a7-4ede-bf58-84497a7f3842" />
 <img width="650" height="375" alt="pcb2" src="https://github.com/user-attachments/assets/dbdcf42a-db41-412c-8534-630dc34a62e7" />
 
-### 4. BOM及物料选型
+### 4. 0Ω物理短路实测
+<img width="1279" height="1704" alt="0Ω" src="https://github.com/user-attachments/assets/43236dbb-9da2-44b5-9259-9550da16427f" />
+
+
+### 5. BOM及物料选型
 ![BOM表]<img width="1338" height="651" alt="bom表" src="https://github.com/user-attachments/assets/fe130b2f-cb5c-4864-a2eb-1b1ad5c848fb" />
 
-### 3. V2.0 迭代：DRC检查0错误全绿
+### 6. 最终迭代：DRC检查0错误全绿
 <img width="1411" height="815" alt="DRC" src="https://github.com/user-attachments/assets/0e566d05-36ad-4a17-ae97-89b0fe0df52d" />
 
 *(注：实物打样及上电测试照片，将于焊接测试完成后更新)*
