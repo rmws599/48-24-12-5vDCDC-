@@ -1,7 +1,7 @@
-# 48V转5V 多级DCDC降压电源模块设计
+# 48V转5V 多级DCDC降压电源模块设计（含硬件Debug与DFM复盘）
 
 ## 📌 项目简介
-本项目设计了一款宽电压输入、多级降压的电源板，采用 **48V → 24V → 12V → 5V** 的“电源树”级联架构。从零独立完成了选型、原理图绘制、四层PCB Layout、BOM核对及打样全流程。
+采用 48V → 24V → 12V → 5V 级联架构的降压电源板。独立完成选型、原理图、四层PCB、BOM、打样、焊接与上电调试，并在调试中定位了DFM工艺缺陷与电路逻辑错误，最终在嘉立创与AD双版本中完成DRC 0错误全绿。
 
 ## 🎯 核心设计逻辑
 1. **拓扑选择**：为避免单级48V转5V压差过大导致的占空比极低（D<10%）和芯片耐压超限问题，采用多级级联降压，将每一级的压差控制在合理范围。
@@ -11,23 +11,19 @@
    - **U3 (LM5148)**：12V转5V，目标输出20W（4A大电流），选用外挂MOS方案，保证散热与效率。
 3. **功率预算倒推**：基于90%的转换效率，从目标输出20W倒推前级功率，确保前一级有足够余量喂饱后一级。
 
-## ⚠️ 踩坑与复盘记录（核心实战经验）
+## ⚠️ 踩坑与复盘记录
 
-### 🛠️ 一、 基础设计与工艺踩坑
-- **电容耐压降额**：最初选用16V的Cvcc电容，意识到12V输入下耐压余量不足（仅为1.3倍），果断更换为25V。深刻理解了硬件**降额设计**的重要性，宁可多花几毛钱，绝不留下安全隐患。
-- **四层板布线报错排查**：在布线时遇到“过孔换层无法连接目标焊盘”的DRC报错。通过调整局部布局，在目标焊盘附近增加过孔回流路径，最终实现DRC清零。这让我对多层板的**信号回流路径**有了直观认识。
-- **BOM与供应链优化**：官方计算器推荐的元器件极端且需订货。结合立创商城与淘宝的实际供应链，主动放宽电感DCR和感值参数，选用了高性价比的现货电感，**有效控制了打样成本**，兼顾了性能与可制造性。
+### 🛠️ 一、DFM极限短路排查
+空板实测输入端阻抗仅 0Ω，排查后确认为 安全间距误设为0mil，导致48V过孔与内层GND在板厂压合时物理短接。教训：DRC通过不等于工厂能造出来。
 
-### 🚨 二、 致命故障： DFM极限短路与Debug
-- **上电策略排查**：焊接完成上电时，遭遇输入浪涌导致保险丝熔断。通过严格采用“先插板子，后插插座”的上电策略，避免了二次浪涌损伤。
-- **0Ω物理短路定位**：在纯空板（未焊接任何元器件）状态下，使用万用表电阻档（200Ω）测量输入端电解电容焊盘两端，实测阻值接近0Ω（0.0Ω），确定为物理直通短路。排除了焊接与元器件误差，后经查证为板厂内层压合DFM极限问题。
-- **DFM工艺极限定性**：结合DRC完全通过的前提，逐一排除了焊接失误与元器件方向错误。与嘉立创CAM工程师协同排查后，确认短路源为内层物理短接。**由于“过孔到铺铜”的安全间距被误设为0mil，导致48V高压过孔与内层GND在板厂压合钻孔时直接物理短接**。
-- **工程教训**：深刻理解了“DRC通过不等于工厂能造出来”。硬件设计必须对物理工艺、DFM保持极度敬畏。
+### 🚨 二、 CVIN1电容逻辑修正
+排查中发现第一级去耦电容CVIN1两端被误接入同一网络（VIN_48V），导致滤波功能完全失效。V2.0已修正为标准的“一端接VIN引脚，一端接GND”。
 
-### ✅ 三、 最终优化与DRC零错误全绿
-- **规则修正**：将安全间距修正为 **8mil（0.2mm）**，为高压区域留出充足的安全裕量。
-- **工程取舍**：在高密度高压区域，果断删除冗余的GND过孔，以空间换安全间距，解决走线拥挤导致的间距冲突。
-- **最终成果**：利用铺铜重建功能优化全局网络。**最终实现嘉立创EDA全量DRC检查（124项）0错误全绿（DRC Clean）！**
+### ✅ 三、 AD版AGND/PGND单点接地优化
+嘉立创版本无法区分模拟地与功率地。AD重画版中，第一级与第三级芯片的AGND分别通过一个0Ω电阻就近连接至PGND（第二级芯片本身未区分），有效降低开关噪声对反馈环路的干扰。
+
+### ✅ 四、 最终优化
+安全间距修正为8mil，删除高压区冗余过孔，最终实现 嘉立创EDA全量DRC检查（124项）0错误全绿。
 
 
 ## 📐 设计成果展示
@@ -36,14 +32,22 @@
 ![电源树]/><img width="828" height="1241" alt="电源树" src="https://github.com/user-attachments/assets/1c79919c-c2c1-46f6-a215-e7f97d8f3f57" />
 
 ### 2. 原理图设计
-![原理图]
-<img width="2313" height="1503" alt="原理图1" src="https://github.com/user-attachments/assets/bb681f99-7912-4af3-b89b-71d485941dd2" />
-<img width="2235" height="1438" alt="原理图2" src="https://github.com/user-attachments/assets/c690d80c-4f28-4e86-9f83-b80aa11ecc72" />
+嘉立创版V2.0：
+<img width="2312" height="1502" alt="V2 0嘉立创原理图" src="https://github.com/user-attachments/assets/799a5c80-a227-400c-a98a-841f4b705242" />
+<img width="2235" height="1438" alt="原理图2" src="https://github.com/user-attachments/assets/72e1d54d-c24e-4389-ba39-4b19e0b0de1c" />
+AD版V2.0：
+<img width="1100" height="763" alt="V2 0_AD原理图1" src="https://github.com/user-attachments/assets/24037aff-20f2-4802-a8bf-d822ab95fdfb" />
+<img width="1050" height="742" alt="V2 0_AD原理图2" src="https://github.com/user-attachments/assets/7f7a71d6-f6e4-47cd-9d6e-7aec769f85ab" />
+
 
 ### 3. PCB Layout（四层板）
-![PCB布局]
-<img width="634" height="382" alt="pcb" src="https://github.com/user-attachments/assets/574a5a2a-36a7-4ede-bf58-84497a7f3842" />
-<img width="650" height="375" alt="pcb2" src="https://github.com/user-attachments/assets/dbdcf42a-db41-412c-8534-630dc34a62e7" />
+嘉立创V2.0版：
+<img width="1080" height="636" alt="v2 0嘉立创pcb" src="https://github.com/user-attachments/assets/93702a25-d6c1-4e53-973a-82287c3cf156" />
+<img width="650" height="375" alt="pcb2" src="https://github.com/user-attachments/assets/19f4e950-3dda-4a9e-8f8b-1a8f34932cea" />
+
+AD版V2.0:
+<img width="1293" height="758" alt="v2 0_ADpcb" src="https://github.com/user-attachments/assets/741fd52b-6f56-431b-b90a-1ee77870e2ff" />
+<img width="1275" height="740" alt="V2 0_ADPCB2" src="https://github.com/user-attachments/assets/a9c47e85-3c80-4cb6-8913-7ca70e11030c" />
 
 ### 4. 0Ω物理短路实测
 <img width="1279" height="1704" alt="0Ω" src="https://github.com/user-attachments/assets/43236dbb-9da2-44b5-9259-9550da16427f" />
